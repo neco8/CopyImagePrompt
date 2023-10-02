@@ -482,28 +482,27 @@ Please, execute the above steps with utmost precision. Any deviation or misunder
 
 getApplicationIconImagePrompt : String -> String
 getApplicationIconImagePrompt theme =
-    """https://docs.midjourney.com/docs/parameter-list
-Refer to the description of `--quality 1`, `--style raw` and `--ar foo:bar` on the above site, and do the following.
----
-Hello ChatGPT, based on the theme '<Theme>', please do the following:
+    """Hello ChatGPT, based on the theme '<Theme>', please follow these instructions with precision:
 
 [INSTRUCTIONS]
-1. Propose 10 textual descriptions for application icons that embody the essence of '<Theme>'.
-2. From those 10 proposals, randomly select 3 descriptions.
-3. Explain in detail how to generate clean modern simple application icons and the features required when making application icons into midjourney prompt.
-4. Generate midjourney prompts for each of the 3 selected descriptions for WHITE BACKGROUND APPLICATION ICON.
+1. Propose 10 textual descriptions for application icons that reflect the essence of '<Theme>'.
+2. Randomly select 3 out of those 10 descriptions.
+3. Detail the process to create modern and simple application icons. Highlight the essential features for crafting these icons into a midjourney prompt.
+4. For each of the 3 selected descriptions, generate midjourney prompts for WHITE BACKGROUND APPLICATION ICONS. Ensure that the prompts lead to modern and simple application icons. Replace <Theme> with the actual theme.
 
 [RESTRICTIONS]
-Please remember and it's crucial: set the parameters to '--v 5.2' and '--ar 1:1' and '--style raw'.
-I emphasize: use '--v 5.2', not '--v 5.1', and use '--ar 1:1', not '--ar 16:9'.
-It's very important to get this right, so please ensure you set the parameters as '--v 5.2' and '--ar 1:1'.
-Provide the generated prompts in a JSON format as an array of strings. Ensure it's not an array of objects.
-Use the Midjourney to generate stunning images. A more descriptive prompt is better for a unique look. Concentrate on the main concepts you want to create.
-Generate an image prompt with care so that the MODERN SIMPLE APPLICATION ICON is generated from [INSTRUCTION 3].
-Instead of saying adjective `generate modern simple application icon` describe the IMAGE ITSELF in a detailed language.
+- Parameters: Use '--v 5.2' and '--ar 1:1'. It's crucial to set these correctly.
+- Format: Provide the prompts in JSON format as an array of strings, not objects.
+- Description: Focus on describing the image itself in detail. The goal is to achieve a unique, modern, and simple application icon look.
+
+# Note: Emphasizing the importance of creating modern and simple application icons.
+# Ensure the parameters '--v 5.2' and '--ar 1:1' are at the end of each prompt.
+# Use the photorealistic plugin for generating the midjourney prompts.
+
 ---
-<Theme>
-""" ++ theme
+<Theme>: """ ++ theme ++ """
+<Instruction>: Generate the prompt of `""" ++ theme ++ """`.
+"""
 
 
 getApplicationMockupImagePrompt : String -> String
