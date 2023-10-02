@@ -360,6 +360,7 @@ init () =
       , replacers =
             [ { before = "--v 5.2.", after = "--v 5.2" }
             , { before = "--v 5.1", after = "--v 5.2" }
+            , { before = " --q 2", after = "" }
             , { before = "📷 ", after = "" }
             ]
       , affixers =
@@ -719,7 +720,7 @@ view model =
                 , toastsView model.toastModels
                 ]
     in
-    { title = "Copy image prompt"
+    { title = "Image prompter"
     , body = [ body ]
     }
 
