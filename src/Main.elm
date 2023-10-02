@@ -461,31 +461,33 @@ buttonsView props =
 
 collapseView : { a | collapsed : Bool, onToggle : msg, collapseLabel : String } -> List (Html msg) -> Html msg
 collapseView props content =
-    div [ class "collapse collapse-arrow rounded-lg bg-slate-100 overflow-visible" ]
-        [ input
-            [ class "hover:cursor-pointer"
-            , type_ "radio"
-            , checked <| not props.collapsed
-            , preventDefaultOn "click" (Json.Decode.succeed ( props.onToggle, False ))
-            ]
-            []
-        , div
-            [ class "collapse-title px-6 py-4 text-slate-600 rounded-lg"
-            , if props.collapsed then
-                class "bg-slate-200"
+    div [ class "w-full" ]
+        [ div [ class "collapse collapse-arrow rounded-lg bg-slate-100 overflow-visible" ]
+            [ input
+                [ class "hover:cursor-pointer"
+                , type_ "radio"
+                , checked <| not props.collapsed
+                , preventDefaultOn "click" (Json.Decode.succeed ( props.onToggle, False ))
+                ]
+                []
+            , div
+                [ class "collapse-title px-6 py-4 text-slate-600 rounded-lg"
+                , if props.collapsed then
+                    class "bg-slate-200"
 
-              else
-                class "bg-transparent"
+                  else
+                    class "bg-transparent"
+                ]
+                [ text props.collapseLabel ]
+            , div [ class "form-control collapse-content px-6" ]
+                content
             ]
-            [ text props.collapseLabel ]
-        , div [ class "form-control collapse-content px-6" ]
-            content
         ]
 
 
 configCardView : { a | label : String, itemViews : List (Html msg), class : Attribute msg } -> Html msg
 configCardView props =
-    div [ class "grid grid-flow-row gap-4 p-6 rounded-lg border border-slate-200 shadow-sm bg-white", props.class ] <|
+    div [ class "grid grid-flow-row gap-3 p-4 rounded-lg border border-slate-200 shadow-sm bg-white", props.class ] <|
         label [ class "text-sm text-slate-600" ] [ text props.label ]
             :: props.itemViews
 
@@ -498,26 +500,28 @@ replacersView props =
         , itemViews =
             List.indexedMap
                 (\index a ->
-                    div [ class "grid grid-flow-col grid-cols-[1fr,auto] gap-4" ]
-                        [ div [ class "grid grid-flow-col gap-4" ]
+                    div [ class "grid grid-flow-col grid-cols-[1fr,min-content] gap-3" ]
+                        [ div [ class "grid grid-cols-2 gap-3" ]
                             [ input
-                                [ class "input input-bordered"
+                                [ class "input input-bordered p-2"
                                 , value a.before
                                 , onInput (InputReplacer index Before)
+                                , placeholder "before"
                                 ]
                                 []
                             , input
-                                [ class "input input-bordered"
+                                [ class "input input-bordered p-2"
                                 , value a.after
                                 , onInput (InputReplacer index After)
+                                , placeholder "after"
                                 ]
                                 []
                             ]
-                        , button [ class "btn btn-square btn-outline", onClick (DeleteReplacer index) ] [ text "x" ]
+                        , button [ class "btn btn-ghost", onClick (DeleteReplacer index) ] [ text "x" ]
                         ]
                 )
                 props.replacers
-                ++ [ button [ class "btn btn-outline", onClick AddReplacer ] [ text "add replacer" ]
+                ++ [ button [ class "btn btn-outline w-full", onClick AddReplacer ] [ text "add replacer" ]
                    ]
         }
 
@@ -561,8 +565,8 @@ affixersView props =
         , itemViews =
             List.indexedMap
                 (\index a ->
-                    div [ class "grid grid-flow-col grid-cols-[auto,1fr,auto,auto] gap-4 items-center" ]
-                        [ select [ class "select select-bordered", onSelectAffix (ChangeAffixAffixer index) ] <|
+                    div [ class "grid grid-flow-col grid-cols-[min-content,1fr,min-content,min-content] gap-3 items-center" ]
+                        [ select [ class "select select-bordered p-2", onSelectAffix (ChangeAffixAffixer index) ] <|
                             List.map
                                 (\affix ->
                                     option
@@ -578,23 +582,24 @@ affixersView props =
                                 )
                                 affixAll
                         , input
-                            [ class "input input-bordered"
+                            [ class "input input-bordered w-full"
                             , value a.string
                             , onInput (InputAffixer index)
+                            , placeholder "add..."
                             ]
                             []
                         , input
                             [ type_ "checkbox"
                             , checked a.enabled
                             , onCheck (always (ToggleEnabledAffixer index))
-                            , class "toggle"
+                            , class "toggle toggle-xs sm:toggle-sm md:toggle-md"
                             ]
                             []
-                        , button [ class "btn btn-square btn-outline", onClick (DeleteAffixer index) ] [ text "x" ]
+                        , button [ class "btn btn-ghost", onClick (DeleteAffixer index) ] [ text "x" ]
                         ]
                 )
                 props.affixers
-                ++ [ button [ class "btn btn-outline", onClick AddAffixer ] [ text "add affixer" ]
+                ++ [ button [ class "btn btn-outline max-w-full", onClick AddAffixer ] [ text "add affixer" ]
                    ]
         , class = props.class
         }
@@ -669,7 +674,7 @@ view : Model -> Document Msg
 view model =
     let
         body =
-            div [ class "grid gap-8 p-10" ]
+            div [ class "grid gap-8 p-6 sm:p-10 w-full" ]
                 [ collapseView
                     { onToggle = ToggleChatGPTPromptGenerater
                     , collapseLabel = "Generate ChatGPT Prompt"
