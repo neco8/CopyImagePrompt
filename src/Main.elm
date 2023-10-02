@@ -280,6 +280,9 @@ buttonsView props =
         replacer start =
             List.foldl (\a -> String.replace a.before a.after) start props.replacers
 
+        isPromptGeneratingStarted =
+            props.copiedIndices |> List.isEmpty |> not
+
         result =
             Result.map
                 (List.map
@@ -290,22 +293,26 @@ buttonsView props =
             <|
                 Json.Decode.decodeString (Json.Decode.list Json.Decode.string) props.jsonInput
     in
-    case result of
-        Ok as_ ->
-            div
-                [ class "grid grid-flow-row gap-2"
-                ]
-            <|
-                List.indexedMap
-                    (\i a -> copyButtonView { str = a, index = i, copied = List.member i props.copiedIndices })
-                    as_
+    if isPromptGeneratingStarted then
+        case result of
+            Ok as_ ->
+                div
+                    [ class "grid grid-flow-row gap-2"
+                    ]
+                <|
+                    List.indexedMap
+                        (\i a -> copyButtonView { str = a, index = i, copied = List.member i props.copiedIndices })
+                        as_
 
-        Err e ->
-            div [ class "rounded-lg p-6 border-collapse bg-red-100 text-red-700" ]
-                [ div [ class "" ]
+            Err e ->
+                div [ class "rounded-lg p-6 border-collapse bg-red-100 text-red-700" ]
                     [ text <| Json.Decode.errorToString e
                     ]
-                ]
+
+    else
+        div [ class "rounded-lg p-6 border-collapse bg-teal-50 text-teal-800" ]
+            [ text "Get started to paste JSON string!"
+            ]
 
 
 replacersView : { a | replacers : List { b | before : String, after : String } } -> Html Msg
