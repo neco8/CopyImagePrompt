@@ -682,7 +682,7 @@ view model =
                     []
                 , div [ class "dropdown dropdown-hover dropdown-bottom dropdown-end" ]
                     [ label [ tabindex 0, class "btn join-item btn-outline" ] [ text "generate" ]
-                    , ul [ tabindex 0, class "dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box" ]
+                    , ul [ tabindex 0, class "dropdown-content z-[2] menu p-2 shadow bg-base-100 rounded-box" ]
                         [ button
                             [ onClick (OnClickCopyImagePromptButton NoteHeader)
                             , class "btn btn-ghost whitespace-nowrap justify-start"
