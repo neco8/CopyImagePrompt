@@ -36,8 +36,6 @@ jobs:
         run: pnpm build
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v2
-        with:
-          path: "./docs" # viteの設定ファイルで設定したものと同じpathにする
 
   # Deployment job
   deploy:
