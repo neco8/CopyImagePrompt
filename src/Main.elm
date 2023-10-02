@@ -1,11 +1,10 @@
 port module Main exposing (main)
 
 import Browser exposing (Document)
-import Html exposing (Attribute, Html, button, div, input, label, option, select, span, text, textarea, ul)
-import Html.Attributes exposing (checked, class, disabled, id, placeholder, rows, selected, tabindex, type_, value)
+import Html exposing (Attribute, Html, button, div, input, label, option, select, text, textarea, ul)
+import Html.Attributes exposing (checked, class, id, placeholder, rows, tabindex, type_, value)
 import Html.Events exposing (on, onCheck, onClick, onInput, preventDefaultOn, targetValue)
 import Json.Decode
-import Json.Encode
 import Process exposing (sleep)
 import Task
 
