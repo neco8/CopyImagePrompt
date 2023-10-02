@@ -6,7 +6,6 @@ export default defineConfig({
   plugins: [elmPlugin(), sassPlugin()],
   build: {
     outDir: "_site",
-    assetsDir: ".",
   },
   base: "CopyImagePrompt",
 });
