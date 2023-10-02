@@ -8,6 +8,7 @@ export default defineConfig({
     sassPlugin()
   ],
   build: {
-    outDir: "_site"
+    outDir: "_site",
+    assetsDir: ".",
   }
 });
