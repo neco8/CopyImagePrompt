@@ -1,10 +1,11 @@
 port module Main exposing (main)
 
 import Browser
-import Html exposing (Html, button, div, input, label, span, text, textarea, ul)
-import Html.Attributes exposing (checked, class, id, placeholder, rows, tabindex, type_, value)
-import Html.Events exposing (onClick, onInput, preventDefaultOn)
+import Html exposing (Attribute, Html, button, div, input, label, option, select, span, text, textarea, ul)
+import Html.Attributes exposing (checked, class, disabled, id, placeholder, rows, selected, tabindex, type_, value)
+import Html.Events exposing (on, onCheck, onClick, onInput, preventDefaultOn, targetValue)
 import Json.Decode
+import Json.Encode
 import Process exposing (sleep)
 import Task
 
@@ -24,15 +25,21 @@ type Msg
     = NoOp
     | InputJSON String
     | InputTheme String
-    | ToggleCollapse
+    | ToggleChatGPTPromptGenerater
+    | ToggleOptions
     | InputReplacer Int BeforeOrAfter String
+    | AddReplacer
+    | InputAffixer Int String
+    | ToggleEnabledAffixer Int
+    | ChangeAffixAffixer Int Affix
+    | DeleteAffixer Int
+    | AddAffixer
     | OnClickCopyButton Int String
     | OnClickCopyImagePromptButton ImageType
     | AddToast { milliseconds : Float, toastStr : String }
     | DeleteToast Int
     | OnPaste String
     | PasteToJsonInput
-    | AddReplacer
     | DeleteReplacer Int
 
 
@@ -91,6 +98,23 @@ updateReplacers index beforeOrAfter str replacers =
         replacers
 
 
+updateAffixers :
+    Int
+    -> ({ affixer | affix : Affix, string : String, enabled : Bool } -> { affixer | affix : Affix, string : String, enabled : Bool })
+    -> List { affixer | affix : Affix, string : String, enabled : Bool }
+    -> List { affixer | affix : Affix, string : String, enabled : Bool }
+updateAffixers index updater affixers =
+    List.indexedMap
+        (\i a ->
+            if i == index then
+                updater a
+
+            else
+                a
+        )
+        affixers
+
+
 updateRaw : Msg -> Model -> ( Model, Cmd Msg )
 updateRaw msg model =
     case msg of
@@ -116,6 +140,78 @@ updateRaw msg model =
         InputReplacer index beforeOrAfter str ->
             ( { model | replacers = updateReplacers index beforeOrAfter str model.replacers }, Cmd.none )
 
+        DeleteReplacer index ->
+            ( { model
+                | replacers =
+                    model.replacers
+                        |> List.indexedMap
+                            (\i a ->
+                                if i == index then
+                                    Nothing
+
+                                else
+                                    Just a
+                            )
+                        |> List.filterMap identity
+              }
+            , Cmd.none
+            )
+
+        InputAffixer index str ->
+            ( { model
+                | affixers =
+                    updateAffixers index
+                        (\affixer -> { affixer | string = str })
+                        model.affixers
+              }
+            , Cmd.none
+            )
+
+        ToggleEnabledAffixer index ->
+            ( { model
+                | affixers =
+                    updateAffixers index
+                        (\affixer -> { affixer | enabled = not affixer.enabled })
+                        model.affixers
+              }
+            , Cmd.none
+            )
+
+        ChangeAffixAffixer index affix ->
+            ( { model
+                | affixers =
+                    updateAffixers index
+                        (\affixer -> { affixer | affix = affix })
+                        model.affixers
+              }
+            , Cmd.none
+            )
+
+        DeleteAffixer index ->
+            ( { model
+                | affixers =
+                    model.affixers
+                        |> List.indexedMap
+                            (\i a ->
+                                if i == index then
+                                    Nothing
+
+                                else
+                                    Just a
+                            )
+                        |> List.filterMap identity
+              }
+            , Cmd.none
+            )
+
+        AddAffixer ->
+            ( { model
+                | affixers =
+                    model.affixers ++ [ { affix = Prefix, string = "", enabled = True } ]
+              }
+            , Cmd.none
+            )
+
         AddToast { milliseconds, toastStr } ->
             addToast milliseconds toastStr model
 
@@ -140,25 +236,11 @@ updateRaw msg model =
         AddReplacer ->
             ( { model | replacers = model.replacers ++ [ { before = "", after = "" } ] }, Cmd.none )
 
-        DeleteReplacer index ->
-            ( { model
-                | replacers =
-                    model.replacers
-                        |> List.indexedMap
-                            (\i a ->
-                                if i == index then
-                                    Nothing
+        ToggleChatGPTPromptGenerater ->
+            ( { model | chatGPTPromptGeneraterCollapsed = not model.chatGPTPromptGeneraterCollapsed }, Cmd.none )
 
-                                else
-                                    Just a
-                            )
-                        |> List.filterMap identity
-              }
-            , Cmd.none
-            )
-
-        ToggleCollapse ->
-            ( { model | collapsed = not model.collapsed }, Cmd.none )
+        ToggleOptions ->
+            ( { model | optionsCollapsed = not model.optionsCollapsed }, Cmd.none )
 
         OnClickCopyImagePromptButton imageType ->
             let
@@ -219,12 +301,36 @@ getNewToastId =
         >> Maybe.withDefault 0
 
 
+type Affix
+    = Prefix
+    | Suffix
+
+
+affixAll : List Affix
+affixAll =
+    let
+        next list =
+            case List.head list of
+                Nothing ->
+                    Prefix :: list |> next
+
+                Just Prefix ->
+                    Suffix :: list |> next
+
+                Just Suffix ->
+                    list
+    in
+    next [] |> List.reverse
+
+
 type alias Model =
     { jsonInput : String
     , themeInput : String
-    , collapsed : Bool
+    , chatGPTPromptGeneraterCollapsed : Bool
+    , optionsCollapsed : Bool
     , toastModels : List ToastModel
     , replacers : List { before : String, after : String }
+    , affixers : List { affix : Affix, string : String, enabled : Bool }
     , copiedIndices : List Int
     }
 
@@ -248,11 +354,15 @@ init : () -> ( Model, Cmd Msg )
 init () =
     ( { jsonInput = ""
       , themeInput = ""
-      , collapsed = False
+      , chatGPTPromptGeneraterCollapsed = False
+      , optionsCollapsed = True
       , toastModels = []
       , replacers =
             [ { before = "--v 5.2.", after = "--v 5.2" }
             , { before = "📷 ", after = "" }
+            ]
+      , affixers =
+            [ { affix = Prefix, string = "/imagine prompt:", enabled = True }
             ]
       , copiedIndices = []
       }
@@ -274,20 +384,52 @@ copyButtonView props =
         [ text ("Copy Image Prompt " ++ String.fromInt (props.index + 1)) ]
 
 
-buttonsView : { a | replacers : List { b | before : String, after : String }, jsonInput : String, copiedIndices : List Int } -> Html Msg
+buttonsView :
+    { a
+        | replacers : List { b | before : String, after : String }
+        , jsonInput : String
+        , copiedIndices : List Int
+        , affixers : List { c | affix : Affix, string : String, enabled : Bool }
+    }
+    -> Html Msg
 buttonsView props =
     let
         replacer start =
+            -- もしかしたらenabledを追加するかも
             List.foldl (\a -> String.replace a.before a.after) start props.replacers
 
+        affixer start =
+            List.foldl
+                (\a ->
+                    if a.enabled then
+                        \str ->
+                            case a.affix of
+                                Prefix ->
+                                    a.string ++ str
+
+                                Suffix ->
+                                    str ++ a.string
+
+                    else
+                        identity
+                )
+                start
+                props.affixers
+
         isPromptGeneratingStarted =
-            props.copiedIndices |> List.isEmpty |> not
+            (not <|
+                List.isEmpty
+                    props.copiedIndices
+            )
+                || (not <|
+                        String.isEmpty props.jsonInput
+                   )
 
         result =
             Result.map
                 (List.map
                     (replacer
-                        >> (\s -> "/imagine prompt:" ++ s)
+                        >> affixer
                     )
                 )
             <|
@@ -315,16 +457,42 @@ buttonsView props =
             ]
 
 
+collapseView : { a | collapsed : Bool, onToggle : msg, collapseLabel : String } -> List (Html msg) -> Html msg
+collapseView props content =
+    div [ class "collapse rounded-lg bg-slate-100 overflow-visible" ]
+        [ input
+            [ class "hover:cursor-pointer"
+            , type_ "radio"
+            , checked <| not props.collapsed
+            , preventDefaultOn "click" (Json.Decode.succeed ( props.onToggle, False ))
+            ]
+            []
+        , div
+            [ class "collapse-title px-6 py-4 text-slate-600 rounded-lg"
+            , if props.collapsed then
+                class "bg-slate-200"
+
+              else
+                class "bg-transparent"
+            ]
+            [ text props.collapseLabel ]
+        , div [ class "form-control collapse-content px-6" ]
+            content
+        ]
+
+
+configCardView : { a | label : String, itemViews : List (Html msg), class : Attribute msg } -> Html msg
 configCardView props =
-    div [ class "grid grid-flow-row gap-4 p-6 rounded-lg border border-slate-200" ] <|
+    div [ class "grid grid-flow-row gap-4 p-6 rounded-lg border border-slate-200 shadow-sm bg-white", props.class ] <|
         label [ class "text-sm text-slate-600" ] [ text props.label ]
             :: props.itemViews
 
 
-replacersView : { a | replacers : List { b | before : String, after : String } } -> Html Msg
+replacersView : { a | replacers : List { b | before : String, after : String }, class : Attribute Msg } -> Html Msg
 replacersView props =
     configCardView
         { label = "Replacers"
+        , class = props.class
         , itemViews =
             List.indexedMap
                 (\index a ->
@@ -350,6 +518,108 @@ replacersView props =
                 ++ [ button [ class "btn btn-outline", onClick AddReplacer ] [ text "add replacer" ]
                    ]
         }
+
+
+affixToValue : Affix -> String
+affixToValue a =
+    case a of
+        Prefix ->
+            "prefix"
+
+        Suffix ->
+            "suffix"
+
+
+affixDecoder : Json.Decode.Decoder Affix
+affixDecoder =
+    targetValue
+        |> Json.Decode.andThen
+            (\s ->
+                case s of
+                    "prefix" ->
+                        Json.Decode.succeed Prefix
+
+                    "suffix" ->
+                        Json.Decode.succeed Suffix
+
+                    _ ->
+                        Json.Decode.fail <| "This is invalid value." ++ s
+            )
+
+
+onSelectAffix : (Affix -> msg) -> Attribute msg
+onSelectAffix tagger =
+    on "input" (Json.Decode.map tagger affixDecoder)
+
+
+affixersView : { a | affixers : List { b | string : String, enabled : Bool, affix : Affix }, class : Attribute Msg } -> Html Msg
+affixersView props =
+    configCardView
+        { label = "Affixer"
+        , itemViews =
+            List.indexedMap
+                (\index a ->
+                    div [ class "grid grid-flow-col grid-cols-[auto,1fr,auto,auto] gap-4 items-center" ]
+                        [ select [ class "select select-bordered", onSelectAffix (ChangeAffixAffixer index) ] <|
+                            List.map
+                                (\affix ->
+                                    option
+                                        [ value <| affixToValue affix ]
+                                        [ text <|
+                                            case affix of
+                                                Prefix ->
+                                                    "← Prefix"
+
+                                                Suffix ->
+                                                    "→ Suffix"
+                                        ]
+                                )
+                                affixAll
+                        , input
+                            [ class "input input-bordered"
+                            , value a.string
+                            , onInput (InputAffixer index)
+                            ]
+                            []
+                        , input
+                            [ type_ "checkbox"
+                            , checked a.enabled
+                            , onCheck (always (ToggleEnabledAffixer index))
+                            , class "toggle"
+                            ]
+                            []
+                        , button [ class "btn btn-square btn-outline", onClick (DeleteAffixer index) ] [ text "x" ]
+                        ]
+                )
+                props.affixers
+                ++ [ button [ class "btn btn-outline", onClick AddAffixer ] [ text "add affixer" ]
+                   ]
+        , class = props.class
+        }
+
+
+optionsView :
+    { a
+        | optionsCollapsed : Bool
+        , replacers : List { b | before : String, after : String }
+        , affixers : List { c | affix : Affix, string : String, enabled : Bool }
+    }
+    -> Html Msg
+optionsView model =
+    collapseView
+        { collapsed = model.optionsCollapsed
+        , onToggle = ToggleOptions
+        , collapseLabel = "Options"
+        }
+        [ replacersView
+            { replacers = model.replacers
+            , class = class ""
+            }
+        , affixersView
+            { affixers = model.affixers
+            , class = class "mt-4"
+            }
+        ]
 
 
 textareaView : { a | class : String, placeholder : String, value : String, onInput : String -> msg, id : String, rows : Int } -> Html msg
@@ -396,58 +666,43 @@ jsonInputId =
 view : Model -> Html Msg
 view model =
     div [ class "grid gap-8 p-10" ]
-        [ div [ class "collapse rounded-lg bg-slate-100 overflow-visible" ]
-            [ input
-                [ class "hover:cursor-pointer"
-                , type_ "radio"
-                , checked <| not model.collapsed
-                , preventDefaultOn "click" (Json.Decode.succeed ( ToggleCollapse, False ))
-                ]
-                []
-            , div
-                [ class "collapse-title px-6 py-4 text-slate-600 rounded-lg"
-                , if model.collapsed then
-                    class "bg-transparent"
-
-                  else
-                    class "bg-slate-200"
-                ]
-                [ text "ThemeからImage Promptを生成する" ]
-            , div [ class "form-control collapse-content px-6" ]
-                [ label [ class "label" ] [ span [ class "label-text text-slate-600" ] [ text "Theme" ] ]
-                , div [ class "join" ]
-                    [ input
-                        [ class "input input-bordered w-full join-item"
-                        , value model.themeInput
-                        , onInput InputTheme
-                        , placeholder "theme:"
-                        , preventDefaultOn "click" (Json.Decode.succeed ( NoOp, False ))
-                        ]
-                        []
-                    , div [ class "dropdown dropdown-hover dropdown-bottom dropdown-end" ]
-                        [ label [ tabindex 0, class "btn join-item btn-outline" ] [ text "generate" ]
-                        , ul [ tabindex 0, class "dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box" ]
-                            [ button
-                                [ onClick (OnClickCopyImagePromptButton NoteHeader)
-                                , class "btn btn-ghost whitespace-nowrap justify-start"
-                                ]
-                                [ text "note header" ]
-                            , button
-                                [ onClick (OnClickCopyImagePromptButton ApplicationMockup)
-                                , class "btn btn-ghost whitespace-nowrap justify-start"
-                                ]
-                                [ text "application mockup" ]
-                            , button
-                                [ onClick (OnClickCopyImagePromptButton ApplicationIcon)
-                                , class "btn btn-ghost whitespace-nowrap justify-start"
-                                ]
-                                [ text "application icon" ]
+        [ collapseView
+            { onToggle = ToggleChatGPTPromptGenerater
+            , collapseLabel = "Generate ChatGPT Prompt"
+            , collapsed = model.chatGPTPromptGeneraterCollapsed
+            }
+            [ div [ class "join" ]
+                [ input
+                    [ class "input input-bordered w-full join-item"
+                    , value model.themeInput
+                    , onInput InputTheme
+                    , placeholder "theme:"
+                    , preventDefaultOn "click" (Json.Decode.succeed ( NoOp, False ))
+                    ]
+                    []
+                , div [ class "dropdown dropdown-hover dropdown-bottom dropdown-end" ]
+                    [ label [ tabindex 0, class "btn join-item btn-outline" ] [ text "generate" ]
+                    , ul [ tabindex 0, class "dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box" ]
+                        [ button
+                            [ onClick (OnClickCopyImagePromptButton NoteHeader)
+                            , class "btn btn-ghost whitespace-nowrap justify-start"
                             ]
+                            [ text "note header" ]
+                        , button
+                            [ onClick (OnClickCopyImagePromptButton ApplicationMockup)
+                            , class "btn btn-ghost whitespace-nowrap justify-start"
+                            ]
+                            [ text "application mockup" ]
+                        , button
+                            [ onClick (OnClickCopyImagePromptButton ApplicationIcon)
+                            , class "btn btn-ghost whitespace-nowrap justify-start"
+                            ]
+                            [ text "application icon" ]
                         ]
                     ]
                 ]
             ]
-        , replacersView model
+        , optionsView model
         , button [ class "btn btn-outline", onClick PasteToJsonInput ] [ text "paste image prompts as json" ]
         , textareaView
             { placeholder = "Image Prompts as JSON format. ✍"
