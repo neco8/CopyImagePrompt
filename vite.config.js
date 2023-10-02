@@ -8,6 +8,6 @@ export default defineConfig({
     sassPlugin()
   ],
   build: {
-    outDir: "docs"
+    outDir: "_site"
   }
 });
