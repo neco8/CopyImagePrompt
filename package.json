@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "vite --port 1848"
+    "start": "vite --port 1848",
+    "build": "vite build"
   },
   "keywords": [],
   "author": "",
