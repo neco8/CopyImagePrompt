@@ -315,11 +315,18 @@ buttonsView props =
             ]
 
 
+configCardView props =
+    div [ class "grid grid-flow-row gap-4 p-6 rounded-lg border border-slate-200" ] <|
+        label [ class "text-sm text-slate-600" ] [ text props.label ]
+            :: props.itemViews
+
+
 replacersView : { a | replacers : List { b | before : String, after : String } } -> Html Msg
 replacersView props =
-    div [ class "grid grid-flow-row gap-4 p-6 rounded-lg border border-slate-200" ] <|
-        label [ class "text-sm text-slate-600" ] [ text "Replacers" ]
-            :: List.indexedMap
+    configCardView
+        { label = "Replacers"
+        , itemViews =
+            List.indexedMap
                 (\index a ->
                     div [ class "grid grid-flow-col grid-cols-[1fr,auto] gap-4" ]
                         [ div [ class "grid grid-flow-col gap-4" ]
@@ -340,8 +347,9 @@ replacersView props =
                         ]
                 )
                 props.replacers
-            ++ [ button [ class "btn btn-outline", onClick AddReplacer ] [ text "add replacer" ]
-               ]
+                ++ [ button [ class "btn btn-outline", onClick AddReplacer ] [ text "add replacer" ]
+                   ]
+        }
 
 
 textareaView : { a | class : String, placeholder : String, value : String, onInput : String -> msg, id : String, rows : Int } -> Html msg
