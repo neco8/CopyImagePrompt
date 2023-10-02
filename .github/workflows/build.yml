@@ -1,0 +1,22 @@
+name: Build
+
+on:
+  push:
+    branches: [ "main" ]
+
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+      - uses: pnpm/action-setup@v2
+        with:
+          version: 7.29.1
+          run_install: |
+            - args: [--frozen-lockfile]
+
+      - name: Build project
+        run: pnpm build
