@@ -34,16 +34,12 @@ jobs:
             - args: [--frozen-lockfile]
       - name: Build
         run: pnpm build
-      - name: Log
-        run: ls -a ./_site
-      - name: Setting Debug Env
-        env:
-          ACTIONS_STEP_DEBUG: true
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v2
         with:
           path:
             _site
+            _site/assets
 
   # Deployment job
   deploy:
