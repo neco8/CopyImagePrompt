@@ -34,6 +34,8 @@ jobs:
             - args: [--frozen-lockfile]
       - name: Build
         run: pnpm build
+      - name: Log
+        run: ls -a ./_site
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v2
         with:
