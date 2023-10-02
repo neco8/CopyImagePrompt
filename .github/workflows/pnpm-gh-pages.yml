@@ -3,6 +3,8 @@ name: Deploy page with GitHub Pages dependencies preinstalled
 on:
   push:
     branches: ["main"]
+  pull_request:
+    branches: ["main"]
 
   workflow_dispatch:
 
