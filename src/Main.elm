@@ -1,6 +1,6 @@
 port module Main exposing (main)
 
-import Browser
+import Browser exposing (Document)
 import Html exposing (Attribute, Html, button, div, input, label, option, select, span, text, textarea, ul)
 import Html.Attributes exposing (checked, class, disabled, id, placeholder, rows, selected, tabindex, type_, value)
 import Html.Events exposing (on, onCheck, onClick, onInput, preventDefaultOn, targetValue)
@@ -664,58 +664,64 @@ jsonInputId =
     "jsonInput"
 
 
-view : Model -> Html Msg
+view : Model -> Document Msg
 view model =
-    div [ class "grid gap-8 p-10" ]
-        [ collapseView
-            { onToggle = ToggleChatGPTPromptGenerater
-            , collapseLabel = "Generate ChatGPT Prompt"
-            , collapsed = model.chatGPTPromptGeneraterCollapsed
-            }
-            [ div [ class "join" ]
-                [ input
-                    [ class "input input-bordered w-full join-item"
-                    , value model.themeInput
-                    , onInput InputTheme
-                    , placeholder "theme:"
-                    , preventDefaultOn "click" (Json.Decode.succeed ( NoOp, False ))
-                    ]
-                    []
-                , div [ class "dropdown dropdown-hover dropdown-bottom dropdown-end" ]
-                    [ label [ tabindex 0, class "btn join-item btn-outline" ] [ text "generate" ]
-                    , ul [ tabindex 0, class "dropdown-content z-[2] menu p-2 shadow bg-base-100 rounded-box" ]
-                        [ button
-                            [ onClick (OnClickCopyImagePromptButton NoteHeader)
-                            , class "btn btn-ghost whitespace-nowrap justify-start"
+    let
+        body =
+            div [ class "grid gap-8 p-10" ]
+                [ collapseView
+                    { onToggle = ToggleChatGPTPromptGenerater
+                    , collapseLabel = "Generate ChatGPT Prompt"
+                    , collapsed = model.chatGPTPromptGeneraterCollapsed
+                    }
+                    [ div [ class "join" ]
+                        [ input
+                            [ class "input input-bordered w-full join-item"
+                            , value model.themeInput
+                            , onInput InputTheme
+                            , placeholder "theme:"
+                            , preventDefaultOn "click" (Json.Decode.succeed ( NoOp, False ))
                             ]
-                            [ text "note header" ]
-                        , button
-                            [ onClick (OnClickCopyImagePromptButton ApplicationMockup)
-                            , class "btn btn-ghost whitespace-nowrap justify-start"
+                            []
+                        , div [ class "dropdown dropdown-hover dropdown-bottom dropdown-end" ]
+                            [ label [ tabindex 0, class "btn join-item btn-outline" ] [ text "generate" ]
+                            , ul [ tabindex 0, class "dropdown-content z-[2] menu p-2 shadow bg-base-100 rounded-box" ]
+                                [ button
+                                    [ onClick (OnClickCopyImagePromptButton NoteHeader)
+                                    , class "btn btn-ghost whitespace-nowrap justify-start"
+                                    ]
+                                    [ text "note header" ]
+                                , button
+                                    [ onClick (OnClickCopyImagePromptButton ApplicationMockup)
+                                    , class "btn btn-ghost whitespace-nowrap justify-start"
+                                    ]
+                                    [ text "application mockup" ]
+                                , button
+                                    [ onClick (OnClickCopyImagePromptButton ApplicationIcon)
+                                    , class "btn btn-ghost whitespace-nowrap justify-start"
+                                    ]
+                                    [ text "application icon" ]
+                                ]
                             ]
-                            [ text "application mockup" ]
-                        , button
-                            [ onClick (OnClickCopyImagePromptButton ApplicationIcon)
-                            , class "btn btn-ghost whitespace-nowrap justify-start"
-                            ]
-                            [ text "application icon" ]
                         ]
                     ]
+                , optionsView model
+                , button [ class "btn btn-outline", onClick PasteToJsonInput ] [ text "paste image prompts as json" ]
+                , textareaView
+                    { placeholder = "Image Prompts as JSON format. ✍"
+                    , value = model.jsonInput
+                    , onInput = InputJSON
+                    , id = jsonInputId
+                    , rows = 10
+                    , class = "p-6"
+                    }
+                , buttonsView model
+                , toastsView model.toastModels
                 ]
-            ]
-        , optionsView model
-        , button [ class "btn btn-outline", onClick PasteToJsonInput ] [ text "paste image prompts as json" ]
-        , textareaView
-            { placeholder = "Image Prompts as JSON format. ✍"
-            , value = model.jsonInput
-            , onInput = InputJSON
-            , id = jsonInputId
-            , rows = 10
-            , class = "p-6"
-            }
-        , buttonsView model
-        , toastsView model.toastModels
-        ]
+    in
+    { title = "Copy image prompt"
+    , body = [ body ]
+    }
 
 
 subscriptions : Model -> Sub Msg
@@ -727,11 +733,13 @@ subscriptions _ =
 
 main : Program () Model Msg
 main =
-    Browser.element
-        { init = init
+    Browser.application
+        { init = \f url key -> init f
         , update = update
         , view = view
         , subscriptions = subscriptions
+        , onUrlChange = \url -> NoOp
+        , onUrlRequest = \urlRequest -> NoOp
         }
 
 
