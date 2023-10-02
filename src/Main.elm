@@ -359,6 +359,7 @@ init () =
       , toastModels = []
       , replacers =
             [ { before = "--v 5.2.", after = "--v 5.2" }
+            , { before = "--v 5.1", after = "--v 5.2" }
             , { before = "📷 ", after = "" }
             ]
       , affixers =
@@ -459,7 +460,7 @@ buttonsView props =
 
 collapseView : { a | collapsed : Bool, onToggle : msg, collapseLabel : String } -> List (Html msg) -> Html msg
 collapseView props content =
-    div [ class "collapse rounded-lg bg-slate-100 overflow-visible" ]
+    div [ class "collapse collapse-arrow rounded-lg bg-slate-100 overflow-visible" ]
         [ input
             [ class "hover:cursor-pointer"
             , type_ "radio"
@@ -742,15 +743,22 @@ getNoteHeaderImagePrompt : String -> String
 getNoteHeaderImagePrompt theme =
     """ChatGPT, here's a detailed task I need you to execute based on the theme "<Theme>":
 
-Understanding <Theme>: First, grasp the essence of "<Theme>". It's crucial that you understand this correctly, as it's the foundation for the following tasks.
+Understanding <Theme>: First, grasp the essence of "<Theme>".
+It's crucial that you understand this correctly, as it's the foundation for the following tasks.
 
-Sketch Ideas: Next, using <Theme> as a basis, I'd like you to conceptualize 10 abstract symbols or designs that can express or represent it. I'm looking for just brief textual descriptions of these symbols or ideas, not actual sketches.
+Sketch Ideas: Next, using <Theme> as a basis, I'd like you to conceptualize 10 abstract symbols or designs that can express or represent it.
+I'm looking for just brief textual descriptions of these symbols or ideas, not actual sketches.
 
-Random Selection: Once you have those 10 ideas, randomly choose 3 out of them. It's essential that this selection is random, so do not prioritize any particular concept.
+Random Selection: Once you have those 10 ideas, randomly choose 3 out of them.
+It's essential that this selection is random, so do not prioritize any particular concept.
 
-Photorealistic Plugin Integration: For these 3 selected ideas, use the photorealistic plugin to generate prompts for midjourney. Here's a VERY important note for the plugin: Set the parameters to '--v 5.2' NOT '--v 5.1' and '--ar 1920:1006' NOT '--ar 16:9'. Please, I can't stress this enough. Make sure the plugin gets this right, even if you need to emphasize it multiple times. Misinterpretation of these parameters can lead to undesirable results.
+Photorealistic Plugin Integration: For these 3 selected ideas, use the photorealistic plugin to generate prompts for midjourney. Here's a VERY important note for the plugin: Set the parameters to '--ar 1920:1006' NOT '--ar 16:9'.
+Please, I can't stress this enough.
+Make sure the plugin gets this right, even if you need to emphasize it multiple times.
+Misinterpretation of these parameters can lead to undesirable results.
 
-Output in JSON: Finally, the generated prompts from the plugin should be presented as an array of strings in JSON format. This means, your output should look something like: ["...", "...", "...", ...].
+Output in JSON: Finally, the generated prompts from the plugin should be presented as an array of strings in JSON format.
+This means, your output should look something like: ["...", "...", "...", ...].
 
 Please, execute the above steps with utmost precision. Any deviation or misunderstanding can impact the final output.
 ---
