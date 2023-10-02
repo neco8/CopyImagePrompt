@@ -396,7 +396,15 @@ view model =
                 , preventDefaultOn "click" (Json.Decode.succeed ( ToggleCollapse, False ))
                 ]
                 []
-            , div [ class "collapse-title px-6 py-4 text-slate-600" ] [ text "ThemeからImage Promptを生成するためのPrompt" ]
+            , div
+                [ class "collapse-title px-6 py-4 text-slate-600 rounded-lg"
+                , if model.collapsed then
+                    class "bg-transparent"
+
+                  else
+                    class "bg-slate-200"
+                ]
+                [ text "ThemeからImage Promptを生成する" ]
             , div [ class "form-control collapse-content px-6" ]
                 [ label [ class "label" ] [ span [ class "label-text text-slate-600" ] [ text "Theme" ] ]
                 , div [ class "join" ]
