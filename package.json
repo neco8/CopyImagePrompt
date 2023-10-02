@@ -1,0 +1,32 @@
+{
+  "name": "ImagePromptCopy",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "vite --port 1848"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "autoprefixer": "^10.4.16",
+    "daisyui": "^3.8.1",
+    "elm": "0.19.1-5",
+    "elm-format": "^0.8.7",
+    "elm-review": "^2.10.3",
+    "elm-test": "0.19.1-revision12",
+    "postcss": "^8.4.30",
+    "sass": "^1.68.0",
+    "tailwindcss": "^3.3.3",
+    "vite": "^4.4.9",
+    "vite-plugin-elm": "^2.8.0",
+    "vite-plugin-sass": "^0.1.0"
+  },
+  "dependencies": {
+    "@types/ws": "^8.5.6",
+    "copy-to-clipboard": "^3.3.3",
+    "ws": "^8.14.2"
+  }
+}
