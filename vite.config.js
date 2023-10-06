@@ -54,6 +54,7 @@ export default defineConfig({
     }),
   ],
   publicDir: "public",
+  assetsInclude: "./assets/*",
   build: {
     outDir: "_site",
   },

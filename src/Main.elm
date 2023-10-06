@@ -1,7 +1,7 @@
 module Main exposing (main)
 
 import Browser exposing (Document)
-import Html exposing (Attribute, Html, a, button, div, form, img, input, label, li, node, option, select, text, textarea, ul)
+import Html exposing (Attribute, Html, a, button, div, form, h2, img, input, label, li, node, option, select, span, text, textarea, ul)
 import Html.Attributes exposing (attribute, checked, class, id, method, placeholder, rows, src, tabindex, type_, value)
 import Html.Events exposing (on, onCheck, onClick, onInput, onSubmit, preventDefaultOn, targetValue)
 import Icon
@@ -421,8 +421,8 @@ navbarView props =
                 ]
             ]
         , div [ class "navbar-center" ]
-            [ button [ class "btn normal-case btn-ghost text-xl" ]
-                [ img [ src "/assets/favicon.ico/apple-touch-icon.png", class "mask mask-squircle h-6" ] []
+            [ button [ class "btn normal-case btn-ghost text-sm md:text-xl transition-all duration-200" ]
+                [ img [ src "./assets/favicon.ico/apple-touch-icon.png", class "mask mask-squircle h-6" ] []
                 , text "Prompts to Commands"
                 ]
             ]
@@ -457,7 +457,10 @@ settingsModalView : {} -> Html Msg
 settingsModalView props =
     node "dialog"
         [ class "modal", id settingsModalId ]
-        [ div [ class "modal-box" ] []
+        [ div [ class "modal-box grid" ]
+            [ h2 [ class "text-lg font-bold text-slate-800" ] [ text "Settings" ]
+            , span [ class "mt-2 text-slate-500" ] [ text "Coming soon..." ]
+            ]
         , form [ method "dialog", class "modal-backdrop", onSubmit CloseModal ] [ button [] [ text "Close" ] ]
         ]
 
