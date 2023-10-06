@@ -2,8 +2,6 @@ import "./styles/index.css";
 import { Elm } from "./Main.elm";
 import copy from "copy-to-clipboard";
 
-const API_ENDPOINT = "https://api.openai.com/v1/chat/completions";
-const API_KEY = "YOUR_OPENAI_API_KEY";
 
 const elem = document.getElementById("main");
 if (elem) {
@@ -16,5 +14,18 @@ if (elem) {
     navigator.clipboard
       .readText()
       .then((clipText) => app.ports.onPaste.send(clipText));
+  });
+
+  app.ports.openModal.subscribe((id) => {
+    const elem = document.getElementById(id);
+    if (!(elem instanceof HTMLDialogElement)) return;
+    elem.showModal();
+    app.ports.receiveModalStatus.send(true)
+  });
+  app.ports.closeModal.subscribe((id) => {
+    const elem = document.getElementById(id);
+    if (!(elem instanceof HTMLDialogElement)) return;
+    elem.close();
+    app.ports.receiveModalStatus.send(false)
   });
 }

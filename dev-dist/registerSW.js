@@ -1,0 +1,1 @@
+if('serviceWorker' in navigator) navigator.serviceWorker.register('/CopyImagePrompt/dev-sw.js?dev-sw', { scope: '/CopyImagePrompt/', type: 'classic' })

@@ -8,6 +8,9 @@ interface Ports {
   copy: Cmd<string>;
   paste: Cmd;
   onPaste: Sub<string>;
+  openModal: Cmd<string>;
+  closeModal: Cmd<string>;
+  receiveModalStatus: Sub<boolean>;
 }
 type Flags = undefined;
 
