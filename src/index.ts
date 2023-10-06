@@ -17,4 +17,17 @@ if (elem) {
       .readText()
       .then((clipText) => app.ports.onPaste.send(clipText));
   });
+
+  app.ports.openModal.subscribe((id) => {
+    const elem = document.getElementById(id);
+    if (!(elem instanceof HTMLDialogElement)) return;
+    elem.showModal();
+    app.ports.receiveModalStatus.send(true)
+  });
+  app.ports.closeModal.subscribe((id) => {
+    const elem = document.getElementById(id);
+    if (!(elem instanceof HTMLDialogElement)) return;
+    elem.close();
+    app.ports.receiveModalStatus.send(false)
+  });
 }
