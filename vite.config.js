@@ -7,5 +7,5 @@ export default defineConfig({
   build: {
     outDir: "_site",
   },
-  base: "CopyImagePrompt",
+  base: "/CopyImagePrompt",
 });
