@@ -1,5 +1,5 @@
 {
-  "name": "copy-image-prompt",
+  "name": "image-prompts-to-commands",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",

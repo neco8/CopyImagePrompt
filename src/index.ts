@@ -2,8 +2,6 @@ import "./styles/index.css";
 import { Elm } from "./Main.elm";
 import copy from "copy-to-clipboard";
 
-const API_ENDPOINT = "https://api.openai.com/v1/chat/completions";
-const API_KEY = "YOUR_OPENAI_API_KEY";
 
 const elem = document.getElementById("main");
 if (elem) {
