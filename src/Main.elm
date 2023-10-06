@@ -1,10 +1,12 @@
-port module Main exposing (main)
+module Main exposing (main)
 
 import Browser exposing (Document)
-import Html exposing (Attribute, Html, button, div, input, label, option, select, text, textarea, ul)
-import Html.Attributes exposing (checked, class, id, placeholder, rows, tabindex, type_, value)
-import Html.Events exposing (on, onCheck, onClick, onInput, preventDefaultOn, targetValue)
+import Html exposing (Attribute, Html, a, button, div, form, img, input, label, li, node, option, select, text, textarea, ul)
+import Html.Attributes exposing (attribute, checked, class, id, method, placeholder, rows, src, tabindex, type_, value)
+import Html.Events exposing (on, onCheck, onClick, onInput, onSubmit, preventDefaultOn, targetValue)
+import Icon
 import Json.Decode
+import Ports
 import Process exposing (sleep)
 import Task
 
@@ -20,6 +22,12 @@ type ImageType
     | ApplicationIcon
 
 
+type OverlayModel
+    = OverlayNone
+    | DrawerOpened
+    | ModalOpened
+
+
 type Msg
     = NoOp
     | InputJSON String
@@ -33,13 +41,18 @@ type Msg
     | ChangeAffixAffixer Int Affix
     | DeleteAffixer Int
     | AddAffixer
-    | OnClickCopyButton Int String
-    | OnClickCopyImagePromptButton ImageType
+    | ClickCopyButton Int String
+    | ClickCopyImagePromptButton ImageType
     | AddToast { milliseconds : Float, toastStr : String }
     | DeleteToast Int
-    | OnPaste String
+    | Paste String
     | PasteToJsonInput
     | DeleteReplacer Int
+    | OpenModal
+    | CloseModal
+    | OpenDrawer
+    | CloseDrawer
+    | ReceiveModalStatus Bool
 
 
 noop : a -> ( a, Cmd msg )
@@ -120,9 +133,9 @@ updateRaw msg model =
         NoOp ->
             noop model
 
-        OnClickCopyButton index str ->
+        ClickCopyButton index str ->
             ( model, Cmd.none )
-                |> andThen (\prev -> ( prev, copy str ))
+                |> andThen (\prev -> ( prev, Ports.copy str ))
                 |> andThen (addToast 2000 ("Midjourney Prompt " ++ (String.fromInt <| index + 1) ++ " is copied!"))
                 |> andThen (\prev -> ( { prev | copiedIndices = index :: prev.copiedIndices }, Cmd.none ))
 
@@ -227,9 +240,9 @@ updateRaw msg model =
             )
 
         PasteToJsonInput ->
-            ( model, paste jsonInputId )
+            ( model, Ports.paste jsonInputId )
 
-        OnPaste str ->
+        Paste str ->
             ( { model | jsonInput = str }, Cmd.none )
 
         AddReplacer ->
@@ -241,7 +254,7 @@ updateRaw msg model =
         ToggleOptions ->
             ( { model | optionsCollapsed = not model.optionsCollapsed }, Cmd.none )
 
-        OnClickCopyImagePromptButton imageType ->
+        ClickCopyImagePromptButton imageType ->
             let
                 imagePrompt =
                     (case imageType of
@@ -256,7 +269,7 @@ updateRaw msg model =
                     )
                         model.themeInput
             in
-            ( model, copy imagePrompt )
+            ( model, Ports.copy imagePrompt )
                 |> andThen
                     (addToast 2000
                         ((case imageType of
@@ -272,6 +285,30 @@ updateRaw msg model =
                             ++ " prompt copied!"
                         )
                     )
+
+        OpenModal ->
+            ( model, Ports.openModal settingsModalId )
+
+        CloseModal ->
+            ( model, Ports.closeModal settingsModalId )
+
+        OpenDrawer ->
+            ( { model | overlayModel = DrawerOpened }, Cmd.none )
+
+        CloseDrawer ->
+            ( { model | overlayModel = OverlayNone }, Cmd.none )
+
+        ReceiveModalStatus modalOpened ->
+            ( { model
+                | overlayModel =
+                    if modalOpened then
+                        ModalOpened
+
+                    else
+                        OverlayNone
+              }
+            , Cmd.none
+            )
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -331,6 +368,7 @@ type alias Model =
     , replacers : List { before : String, after : String }
     , affixers : List { affix : Affix, string : String, enabled : Bool }
     , copiedIndices : List Int
+    , overlayModel : OverlayModel
     }
 
 
@@ -357,8 +395,8 @@ init () =
       , optionsCollapsed = True
       , toastModels = []
       , replacers =
-            [ { before = "--v 5.2.", after = "--v 5.2" }
-            , { before = "--v 5.1", after = "--v 5.2" }
+            [ { before = "--v 5.1", after = "--v 5.2" }
+            , { before = "--v 5.2.", after = "--v 5.2" }
             , { before = " --q 2", after = "" }
             , { before = "📷 ", after = "" }
             ]
@@ -366,9 +404,62 @@ init () =
             [ { affix = Prefix, string = "/imagine prompt:", enabled = True }
             ]
       , copiedIndices = []
+      , overlayModel = OverlayNone
       }
     , Cmd.none
     )
+
+
+navbarView : { a | hamburgerClass : Attribute msg, checkedHamburger : Bool, onCheckHamburger : Bool -> msg } -> Html msg
+navbarView props =
+    div [ class "navbar bg-base-100 shadow-md rounded-lg p-3" ]
+        [ div [ class "navbar-start" ]
+            [ label [ class "btn btn-square btn-ghost swap swap-rotate", props.hamburgerClass ]
+                [ input [ type_ "checkbox", checked props.checkedHamburger, onCheck props.onCheckHamburger ] []
+                , Icon.iconView { iconType = Icon.Menu, class = class "swap-off" }
+                , Icon.iconView { iconType = Icon.Close, class = class "swap-on" }
+                ]
+            ]
+        , div [ class "navbar-center" ]
+            [ button [ class "btn normal-case btn-ghost text-xl" ]
+                [ img [ src "/assets/favicon.ico/favicon-32x32.png", class "mask mask-squircle" ] []
+                , text "Image Prompter"
+                ]
+            ]
+        , div [ class "navbar-end" ] []
+        ]
+
+
+drawerView : { a | drawerOpened : Bool } -> List (Html Msg) -> Html Msg
+drawerView props children =
+    div [ class "drawer lg:drawer-open" ]
+        [ input [ type_ "checkbox", checked props.drawerOpened, class "drawer-toggle" ] []
+        , div [ class "drawer-content" ] children
+        , div [ class "drawer-side z-10" ]
+            [ label [ attribute "aria-label" "close sidebar", class "drawer-overlay", onClick CloseDrawer ] []
+            , ul [ class "menu p-4 w-80 min-h-full bg-base-200 text-base-content" ]
+                [ li [ class "text-lg", onClick OpenModal ]
+                    [ a []
+                        [ text "Settings"
+                        ]
+                    ]
+                ]
+            ]
+        ]
+
+
+settingsModalId : String
+settingsModalId =
+    "settings"
+
+
+settingsModalView : {} -> Html Msg
+settingsModalView props =
+    node "dialog"
+        [ class "modal", id settingsModalId ]
+        [ div [ class "modal-box" ] []
+        , form [ method "dialog", class "modal-backdrop", onSubmit CloseModal ] [ button [] [ text "Close" ] ]
+        ]
 
 
 copyButtonView : { a | copied : Bool, index : Int, str : String } -> Html Msg
@@ -380,7 +471,7 @@ copyButtonView props =
 
           else
             class "btn-primary"
-        , onClick (OnClickCopyButton props.index props.str)
+        , onClick (ClickCopyButton props.index props.str)
         ]
         [ text ("Copy Image Prompt " ++ String.fromInt (props.index + 1)) ]
 
@@ -516,7 +607,9 @@ replacersView props =
                                 ]
                                 []
                             ]
-                        , button [ class "btn btn-ghost", onClick (DeleteReplacer index) ] [ text "x" ]
+                        , button [ class "btn btn-ghost", onClick (DeleteReplacer index) ]
+                            [ Icon.iconView { class = class "text-sm", iconType = Icon.Close }
+                            ]
                         ]
                 )
                 props.replacers
@@ -673,66 +766,108 @@ view : Model -> Document Msg
 view model =
     let
         body =
-            div [ class "grid gap-8 p-6 sm:p-10 w-full" ]
-                [ collapseView
-                    { onToggle = ToggleChatGPTPromptGenerater
-                    , collapseLabel = "Generate ChatGPT Prompt"
-                    , collapsed = model.chatGPTPromptGeneraterCollapsed
-                    }
-                    [ div [ class "join" ]
-                        [ input
-                            [ class "input input-bordered w-full join-item"
-                            , value model.themeInput
-                            , onInput InputTheme
-                            , placeholder "theme:"
-                            , preventDefaultOn "click" (Json.Decode.succeed ( NoOp, False ))
-                            ]
-                            []
-                        , div [ class "dropdown dropdown-hover dropdown-bottom dropdown-end" ]
-                            [ label [ tabindex 0, class "btn join-item btn-outline" ] [ text "generate" ]
-                            , ul [ tabindex 0, class "dropdown-content z-[2] menu p-2 shadow bg-base-100 rounded-box" ]
-                                [ button
-                                    [ onClick (OnClickCopyImagePromptButton NoteHeader)
-                                    , class "btn btn-ghost whitespace-nowrap justify-start"
+            drawerView { drawerOpened = model.overlayModel == DrawerOpened } <|
+                [ div [ class "grid gap-8 p-6 sm:p-10 w-full" ]
+                    [ navbarView
+                        { checkedHamburger = model.overlayModel == DrawerOpened
+                        , onCheckHamburger =
+                            \hamburgerChecked ->
+                                if hamburgerChecked then
+                                    OpenDrawer
+
+                                else
+                                    CloseDrawer
+                        , hamburgerClass = class "lg:hidden"
+                        }
+                    , collapseView
+                        { onToggle = ToggleChatGPTPromptGenerater
+                        , collapseLabel = "Generate ChatGPT Prompt"
+                        , collapsed = model.chatGPTPromptGeneraterCollapsed
+                        }
+                        [ div [ class "join" ]
+                            [ input
+                                [ class "input input-bordered w-full join-item"
+                                , value model.themeInput
+                                , onInput InputTheme
+                                , placeholder "theme:"
+                                , preventDefaultOn "click" (Json.Decode.succeed ( NoOp, False ))
+                                ]
+                                []
+                            , let
+                                canGenerate =
+                                    String.isEmpty model.themeInput
+                                        |> not
+                              in
+                              div
+                                [ class "dropdown dropdown-hover dropdown-bottom dropdown-end" ]
+                                [ label
+                                    [ tabindex <|
+                                        if canGenerate then
+                                            0
+
+                                        else
+                                            -1
+                                    , class "btn join-item btn-outline"
+                                    , if canGenerate then
+                                        class ""
+
+                                      else
+                                        class "btn-disabled"
                                     ]
-                                    [ text "note header" ]
-                                , button
-                                    [ onClick (OnClickCopyImagePromptButton ApplicationMockup)
-                                    , class "btn btn-ghost whitespace-nowrap justify-start"
-                                    ]
-                                    [ text "application mockup" ]
-                                , button
-                                    [ onClick (OnClickCopyImagePromptButton ApplicationIcon)
-                                    , class "btn btn-ghost whitespace-nowrap justify-start"
-                                    ]
-                                    [ text "application icon" ]
+                                    [ text "generate" ]
+                                , if canGenerate then
+                                    ul [ tabindex 0, class "dropdown-content z-[2] menu p-2 shadow bg-base-100 rounded-box" ]
+                                        [ button
+                                            [ onClick (ClickCopyImagePromptButton NoteHeader)
+                                            , class "btn btn-ghost whitespace-nowrap justify-start"
+                                            ]
+                                            [ text "note header" ]
+                                        , button
+                                            [ onClick (ClickCopyImagePromptButton ApplicationMockup)
+                                            , class "btn btn-ghost whitespace-nowrap justify-start"
+                                            ]
+                                            [ text "application mockup" ]
+                                        , button
+                                            [ onClick (ClickCopyImagePromptButton ApplicationIcon)
+                                            , class "btn btn-ghost whitespace-nowrap justify-start"
+                                            ]
+                                            [ text "application icon" ]
+                                        ]
+
+                                  else
+                                    text ""
                                 ]
                             ]
                         ]
+                    , optionsView model
+                    , button [ class "btn btn-outline", onClick PasteToJsonInput ] [ text "paste image prompts as json" ]
+                    , textareaView
+                        { placeholder = "Image Prompts as JSON format. ✍"
+                        , value = model.jsonInput
+                        , onInput = InputJSON
+                        , id = jsonInputId
+                        , rows = 10
+                        , class = "p-6"
+                        }
+                    , buttonsView model
+                    , toastsView model.toastModels
+                    , settingsModalView {}
                     ]
-                , optionsView model
-                , button [ class "btn btn-outline", onClick PasteToJsonInput ] [ text "paste image prompts as json" ]
-                , textareaView
-                    { placeholder = "Image Prompts as JSON format. ✍"
-                    , value = model.jsonInput
-                    , onInput = InputJSON
-                    , id = jsonInputId
-                    , rows = 10
-                    , class = "p-6"
-                    }
-                , buttonsView model
-                , toastsView model.toastModels
                 ]
     in
     { title = "Image prompter"
-    , body = [ body ]
+    , body =
+        [ body
+        ]
     }
 
 
 subscriptions : Model -> Sub Msg
 subscriptions _ =
     Sub.batch
-        [ onPaste OnPaste
+        [ Ports.onPaste Paste
+        , Ports.receiveModalStatus
+            ReceiveModalStatus
         ]
 
 
@@ -828,16 +963,3 @@ This is very crucial as the photorealistic plugin tends to get confused.
 ---
 <Theme>
 """ ++ theme
-
-
-
------
-
-
-port copy : String -> Cmd msg
-
-
-port paste : String -> Cmd msg
-
-
-port onPaste : (String -> msg) -> Sub msg
