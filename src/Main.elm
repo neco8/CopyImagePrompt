@@ -839,16 +839,18 @@ view model =
                                 ]
                             ]
                         ]
-                    , optionsView model
-                    , button [ class "btn btn-outline", onClick PasteToJsonInput ] [ text "paste image prompts as json" ]
-                    , textareaView
-                        { placeholder = "Image Prompts as JSON format. ✍"
-                        , value = model.jsonInput
-                        , onInput = InputJSON
-                        , id = jsonInputId
-                        , rows = 10
-                        , class = "p-6"
-                        }
+                    , div [ class "grid grid-flow-row gap-4" ]
+                        [ button [ class "btn btn-outline", onClick PasteToJsonInput ] [ text "paste image prompts as json" ]
+                        , optionsView model
+                        , textareaView
+                            { placeholder = "Image Prompts as JSON format. ✍"
+                            , value = model.jsonInput
+                            , onInput = InputJSON
+                            , id = jsonInputId
+                            , rows = 10
+                            , class = "p-6"
+                            }
+                        ]
                     , buttonsView model
                     , toastsView model.toastModels
                     , settingsModalView {}
