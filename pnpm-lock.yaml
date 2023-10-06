@@ -8,6 +8,7 @@ specifiers:
   elm-format: ^0.8.7
   elm-review: ^2.10.3
   elm-test: 0.19.1-revision12
+  elm-vite-plugin-helper: github:hmsk/elm-vite-plugin-helper
   postcss: ^8.4.30
   sass: ^1.68.0
   tailwindcss: ^3.3.3
@@ -26,6 +27,7 @@ devDependencies:
   elm-format: 0.8.7
   elm-review: 2.10.3
   elm-test: 0.19.1-revision12
+  elm-vite-plugin-helper: github.com/hmsk/elm-vite-plugin-helper/c71d936e6722b46066f1b897efea096ade2dbb0b
   postcss: 8.4.30
   sass: 1.68.0
   tailwindcss: 3.3.3
@@ -4707,4 +4709,10 @@ packages:
   /yocto-queue/0.1.0:
     resolution: {integrity: sha512-rVksvsnNCdJ/ohGc6xgPwyN8eheCxsiLM8mxuE/t/mOVqJewPuO1miLpTHQiRgTKCLexL4MeAFVagts7HmNZ2Q==}
     engines: {node: '>=10'}
+    dev: true
+
+  github.com/hmsk/elm-vite-plugin-helper/c71d936e6722b46066f1b897efea096ade2dbb0b:
+    resolution: {tarball: https://codeload.github.com/hmsk/elm-vite-plugin-helper/tar.gz/c71d936e6722b46066f1b897efea096ade2dbb0b}
+    name: elm-vite-plugin-helper
+    version: 0.0.0
     dev: true

@@ -9,6 +9,7 @@ import Json.Decode
 import Ports
 import Process exposing (sleep)
 import Task
+import VitePluginHelper as V
 
 
 type BeforeOrAfter
@@ -422,7 +423,7 @@ navbarView props =
             ]
         , div [ class "navbar-center" ]
             [ button [ class "btn normal-case btn-ghost text-sm md:text-xl transition-all duration-200" ]
-                [ img [ src "./assets/favicon.ico/apple-touch-icon.png", class "mask mask-squircle h-6" ] []
+                [ img [ src <| V.asset "/assets/favicon.ico/apple-touch-icon.png?inline", class "mask mask-squircle h-6" ] []
                 , text "Prompts to Commands"
                 ]
             ]
