@@ -414,16 +414,16 @@ navbarView : { a | hamburgerClass : Attribute msg, checkedHamburger : Bool, onCh
 navbarView props =
     div [ class "navbar bg-base-100 shadow-md rounded-lg p-3" ]
         [ div [ class "navbar-start" ]
-            [ label [ class "btn btn-square btn-ghost swap swap-rotate", props.hamburgerClass ]
+            [ label [ class "btn swap swap-rotate bg-transparent border-transparent hover:bg-transparent hover:border-transparent text-slate-400 hover:text-slate-800", props.hamburgerClass ]
                 [ input [ type_ "checkbox", checked props.checkedHamburger, onCheck props.onCheckHamburger ] []
-                , Icon.iconView { iconType = Icon.Menu, class = class "swap-off" }
-                , Icon.iconView { iconType = Icon.Close, class = class "swap-on" }
+                , Icon.iconView { iconType = Icon.Menu, class = class "swap-off text-sm" }
+                , Icon.iconView { iconType = Icon.Close, class = class "swap-on text-sm" }
                 ]
             ]
         , div [ class "navbar-center" ]
             [ button [ class "btn normal-case btn-ghost text-xl" ]
-                [ img [ src "/assets/favicon.ico/favicon-32x32.png", class "mask mask-squircle" ] []
-                , text "Image Prompter"
+                [ img [ src "/assets/favicon.ico/apple-touch-icon.png", class "mask mask-squircle h-6" ] []
+                , text "Prompts to Commands"
                 ]
             ]
         , div [ class "navbar-end" ] []
@@ -545,7 +545,7 @@ buttonsView props =
 
     else
         div [ class "rounded-lg p-6 border-collapse bg-teal-50 text-teal-800" ]
-            [ text "Get started to paste JSON string!"
+            [ text "Get started by pasting an array of strings in JSON format!"
             ]
 
 
@@ -840,7 +840,7 @@ view model =
                             ]
                         ]
                     , div [ class "grid grid-flow-row gap-4" ]
-                        [ button [ class "btn btn-outline", onClick PasteToJsonInput ] [ text "paste image prompts as json" ]
+                        [ button [ class "btn btn-outline", onClick PasteToJsonInput ] [ text "paste image prompts as json array" ]
                         , optionsView model
                         , textareaView
                             { placeholder = "Image Prompts as JSON format. ✍"
