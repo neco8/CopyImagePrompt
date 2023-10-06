@@ -922,26 +922,25 @@ Please, execute the above steps with utmost precision. Any deviation or misunder
 
 getApplicationIconImagePrompt : String -> String
 getApplicationIconImagePrompt theme =
-    """Hello ChatGPT, based on the theme '<Theme>', please follow these instructions with precision:
+    """Hello ChatGPT, based on the theme '<Theme>', please follow these instructions with PRECISION:
 
 [INSTRUCTIONS]
-1. Propose 10 textual descriptions for application icons that reflect the essence of '<Theme>'.
+1. Propose 10 textual descriptions for application icons that reflect the essence of '<Theme>' in English.
 2. Randomly select 3 out of those 10 descriptions.
-3. Detail the process to create modern and simple application icons. Highlight the essential features for crafting these icons into a midjourney prompt.
-4. For each of the 3 selected descriptions, generate midjourney prompts for WHITE BACKGROUND APPLICATION ICONS. Ensure that the prompts lead to modern and simple application icons. Replace <Theme> with the actual theme.
+3. Detail the process to DEPICT modern and simple application icons. Highlight the essential features for depicting these icons into a midjourney prompt.
+4. For each of the 3 selected descriptions, generate midjourney prompts for WHITE BACKGROUND APPLICATION ICONS. Ensure that the prompts lead to modern and simple application icons.
 
 [RESTRICTIONS]
 - Parameters: Use '--v 5.2' and '--ar 1:1'. It's crucial to set these correctly.
-- Format: Provide the prompts in JSON format as an array of strings, not objects.
+- Format: Provide the prompts in JSON format as an **array of strings**, not objects.
 - Description: Focus on describing the image itself in detail. The goal is to achieve a unique, modern, and simple application icon look.
 
-# Note: Emphasizing the importance of creating modern and simple application icons.
+# Note: Emphasizing the importance of depicting modern and simple application icons.
 # Ensure the parameters '--v 5.2' and '--ar 1:1' are at the end of each prompt.
 # Use the photorealistic plugin for generating the midjourney prompts.
 
 ---
 <Theme>: """ ++ theme ++ """
-<Instruction>: Generate the prompt of `""" ++ theme ++ """`.
 """
 
 
