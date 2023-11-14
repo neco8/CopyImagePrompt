@@ -8,6 +8,7 @@ type IconType
     = Menu
     | Close
     | MoreVert
+    | Settings
 
 
 iconTypeToString t =
@@ -20,6 +21,9 @@ iconTypeToString t =
 
         MoreVert ->
             "more_vert"
+
+        Settings ->
+            "settings"
 
 
 iconView props =
