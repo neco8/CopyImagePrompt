@@ -6,9 +6,11 @@ import Html.Attributes exposing (attribute, checked, class, id, method, placehol
 import Html.Events exposing (on, onCheck, onClick, onInput, onSubmit, preventDefaultOn, targetValue)
 import Icon
 import Json.Decode
+import Json.Encode
 import Ports
 import Process exposing (sleep)
 import Task
+import Util
 import VitePluginHelper as V
 
 
@@ -54,20 +56,12 @@ type Msg
     | OpenDrawer
     | CloseDrawer
     | ReceiveModalStatus Bool
+    | ReceiveSettings Json.Decode.Value
 
 
 noop : a -> ( a, Cmd msg )
 noop model =
     ( model, Cmd.none )
-
-
-andThen : (a -> ( b, Cmd msg )) -> ( a, Cmd msg ) -> ( b, Cmd msg )
-andThen a ( model, cmd0 ) =
-    let
-        ( nextModel, cmd1 ) =
-            a model
-    in
-    ( nextModel, Cmd.batch [ cmd0, cmd1 ] )
 
 
 addToast : Float -> String -> { a | toastModels : List ToastModel } -> ( { a | toastModels : List ToastModel }, Cmd Msg )
@@ -136,9 +130,9 @@ updateRaw msg model =
 
         ClickCopyButton index str ->
             ( model, Cmd.none )
-                |> andThen (\prev -> ( prev, Ports.copy str ))
-                |> andThen (addToast 2000 ("Midjourney Prompt " ++ (String.fromInt <| index + 1) ++ " is copied!"))
-                |> andThen (\prev -> ( { prev | copiedIndices = index :: prev.copiedIndices }, Cmd.none ))
+                |> Util.andThen (\prev -> ( prev, Ports.copy str ))
+                |> Util.andThen (addToast 2000 ("Midjourney Prompt " ++ (String.fromInt <| index + 1) ++ " is copied!"))
+                |> Util.andThen (\prev -> ( { prev | copiedIndices = index :: prev.copiedIndices }, Cmd.none ))
 
         InputJSON str ->
             ( { model | jsonInput = str }, Cmd.none )
@@ -271,7 +265,7 @@ updateRaw msg model =
                         model.themeInput
             in
             ( model, Ports.copy imagePrompt )
-                |> andThen
+                |> Util.andThen
                     (addToast 2000
                         ((case imageType of
                             NoteHeader ->
@@ -310,6 +304,14 @@ updateRaw msg model =
               }
             , Cmd.none
             )
+
+        ReceiveSettings value ->
+            case Json.Decode.decodeValue settingsCodec.decoder value of
+                Ok settings ->
+                    noop model
+
+                Err err ->
+                    noop model
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -388,7 +390,7 @@ resetCopiedIndices before after =
         after
 
 
-init : () -> ( Model, Cmd Msg )
+init : () -> ( Model, Cmd (Ports.Msg Msg) )
 init () =
     ( { jsonInput = ""
       , themeInput = ""
@@ -403,6 +405,7 @@ init () =
             ]
       , affixers =
             [ { affix = Prefix, string = "/imagine prompt:", enabled = True }
+            , { affix = Suffix, string = " --style raw", enabled = False }
             ]
       , copiedIndices = []
       , overlayModel = OverlayNone
@@ -431,17 +434,18 @@ navbarView props =
         ]
 
 
-drawerView : { a | drawerOpened : Bool } -> List (Html Msg) -> Html Msg
+drawerView : { a | drawerOpened : Bool, class : Attribute Msg } -> List (Html Msg) -> Html Msg
 drawerView props children =
-    div [ class "drawer lg:drawer-open" ]
+    div [ class "drawer lg:drawer-open", props.class ]
         [ input [ type_ "checkbox", checked props.drawerOpened, class "drawer-toggle" ] []
         , div [ class "drawer-content" ] children
         , div [ class "drawer-side z-10" ]
             [ label [ attribute "aria-label" "close sidebar", class "drawer-overlay", onClick CloseDrawer ] []
             , ul [ class "menu p-4 w-80 min-h-full bg-base-200 text-base-content" ]
-                [ li [ class "text-lg", onClick OpenModal ]
+                [ li [ class "text-lg text-slate-600", onClick OpenModal ]
                     [ a []
-                        [ text "Settings"
+                        [ Icon.iconView { iconType = Icon.Settings, class = class "text-lg" }
+                        , text "Settings"
                         ]
                     ]
                 ]
@@ -529,7 +533,13 @@ buttonsView props =
                     )
                 )
             <|
-                Json.Decode.decodeString (Json.Decode.list Json.Decode.string) props.jsonInput
+                Json.Decode.decodeString
+                    (Json.Decode.oneOf
+                        [ Json.Decode.list Json.Decode.string
+                        , Json.Decode.string |> Json.Decode.map List.singleton
+                        ]
+                    )
+                    props.jsonInput
     in
     if isPromptGeneratingStarted then
         case result of
@@ -688,7 +698,7 @@ affixersView props =
                             [ type_ "checkbox"
                             , checked a.enabled
                             , onCheck (always (ToggleEnabledAffixer index))
-                            , class "toggle toggle-xs sm:toggle-sm md:toggle-md"
+                            , class "toggle toggle-xs toggle-primary sm:toggle-sm md:toggle-md"
                             ]
                             []
                         , button [ class "btn btn-ghost", onClick (DeleteAffixer index) ] [ text "x" ]
@@ -766,11 +776,11 @@ jsonInputId =
     "jsonInput"
 
 
-view : Model -> Document Msg
+view : Model -> Document (Ports.Msg Msg)
 view model =
     let
         body =
-            drawerView { drawerOpened = model.overlayModel == DrawerOpened } <|
+            drawerView { drawerOpened = model.overlayModel == DrawerOpened, class = class "font-poppins" } <|
                 [ div [ class "grid gap-8 p-6 sm:p-10 w-full" ]
                     [ navbarView
                         { checkedHamburger = model.overlayModel == DrawerOpened
@@ -863,30 +873,58 @@ view model =
     in
     { title = "Image prompter"
     , body =
-        [ body
+        [ body |> Html.map Ports.UserMsg
         ]
     }
 
 
-subscriptions : Model -> Sub Msg
+subscriptions : Model -> Sub (Ports.Msg Msg)
 subscriptions _ =
     Sub.batch
-        [ Ports.onPaste Paste
+        [ Ports.onPaste (Paste >> Ports.UserMsg)
         , Ports.receiveModalStatus
-            ReceiveModalStatus
+            (ReceiveModalStatus >> Ports.UserMsg)
+        , Ports.receiveLoadResult
         ]
 
 
-main : Program () Model Msg
+main : Program () Model (Ports.Msg Msg)
 main =
     Browser.application
         { init = \f url key -> init f
-        , update = update
+        , update = Ports.update receiveMsgSettings update
         , view = view
         , subscriptions = subscriptions
-        , onUrlChange = \url -> NoOp
-        , onUrlRequest = \urlRequest -> NoOp
+        , onUrlChange = \url -> Ports.UserMsg NoOp
+        , onUrlRequest = \urlRequest -> Ports.UserMsg NoOp
         }
+
+
+
+-----
+-- database
+
+
+settingsIdMsg : ( Ports.MsgId, Json.Decode.Value -> Msg )
+settingsIdMsg =
+    ( "receiveSettings", ReceiveSettings )
+
+
+receiveMsgSettings : List ( Ports.MsgId, Json.Decode.Value -> Msg )
+receiveMsgSettings =
+    [ settingsIdMsg ]
+
+
+type alias Settings =
+    {}
+
+
+settingsCodec : Ports.Codec Settings
+settingsCodec =
+    { path = [ "settings" ]
+    , decoder = Json.Decode.succeed {}
+    , encoder = always Json.Encode.null
+    }
 
 
 
@@ -895,26 +933,20 @@ main =
 
 getNoteHeaderImagePrompt : String -> String
 getNoteHeaderImagePrompt theme =
-    """ChatGPT, here's a detailed task I need you to execute based on the theme "<Theme>":
+    """ChatGPT, I need your assistance with a creative task involving the theme "<Theme>":
 
-Understanding <Theme>: First, grasp the essence of "<Theme>".
-It's crucial that you understand this correctly, as it's the foundation for the following tasks.
+1. Insight on <Theme>: Begin by discussing the concept of "<Theme>". Provide a brief overview to ensure that you have a proper understanding of it, as it will be the basis for the subsequent ideas.
 
-Sketch Ideas: Next, using <Theme> as a basis, I'd like you to conceptualize 10 abstract symbols or designs that can express or represent it.
-I'm looking for just brief textual descriptions of these symbols or ideas, not actual sketches.
+2. Conceptualize Ideas: Based on <Theme>, please come up with 10 original concepts or symbols that could represent or be associated with the theme. I would like a short textual description for each concept or symbol.
 
-Random Selection: Once you have those 10 ideas, randomly choose 3 out of them.
-It's essential that this selection is random, so do not prioritize any particular concept.
+3. Suggestion for Random Selection: If you had to suggest 3 concepts or symbols out of the 10 you create, which would you choose? While you cannot perform a random selection, please try to diversify the selections to cover different aspects of the theme.
 
-Photorealistic Plugin Integration: For these 3 selected ideas, use the photorealistic plugin to generate prompts for midjourney. Here's a VERY important note for the plugin: Set the parameters to '--ar 1920:1006' NOT '--ar 16:9'.
-Please, I can't stress this enough.
-Make sure the plugin gets this right, even if you need to emphasize it multiple times.
-Misinterpretation of these parameters can lead to undesirable results.
+4. Descriptions for Visualization: For the 3 suggested concepts or symbols, I would like you to elaborate and provide detailed descriptions suitable for an artist to use as a brief. The details should be vivid enough.
+NOTE: Add suffix ` --ar 1920:1006 --style raw --v 5.2`
 
-Output in JSON: Finally, the generated prompts from the plugin should be presented as an array of strings in JSON format.
-This means, your output should look something like: ["...", "...", "...", ...].
+5. JSON Format Presentation: Finally, present the detailed descriptions as an array of strings in JSON format. Your output should resemble: `["Description of concept 1", "Description of concept 2", "Description of concept 3"]`.
 
-Please, execute the above steps with utmost precision. Any deviation or misunderstanding can impact the final output.
+I trust your creative input on this task. Your thoroughness and creativity are key for the final outcome.
 ---
 <Theme>
 """ ++ theme
@@ -922,27 +954,27 @@ Please, execute the above steps with utmost precision. Any deviation or misunder
 
 getApplicationIconImagePrompt : String -> String
 getApplicationIconImagePrompt theme =
-    """Hello ChatGPT, based on the theme '<Theme>', please follow these instructions with precision:
+    """Hello ChatGPT,
 
-[INSTRUCTIONS]
-1. Propose 10 textual descriptions for application icons that reflect the essence of '<Theme>'.
-2. Randomly select 3 out of those 10 descriptions.
-3. Detail the process to create modern and simple application icons. Highlight the essential features for crafting these icons into a midjourney prompt.
-4. For each of the 3 selected descriptions, generate midjourney prompts for WHITE BACKGROUND APPLICATION ICONS. Ensure that the prompts lead to modern and simple application icons. Replace <Theme> with the actual theme.
+I need to develop a series of application icons that embody a theme to be specified later. These icons should reflect a modern design ethos with minimalist features. The icons must have a stark white background to reinforce their sleek and contemporary nature, with clean-cut lines implicitly conveying the theme.
 
-[RESTRICTIONS]
-- Parameters: Use '--v 5.2' and '--ar 1:1'. It's crucial to set these correctly.
-- Format: Provide the prompts in JSON format as an array of strings, not objects.
-- Description: Focus on describing the image itself in detail. The goal is to achieve a unique, modern, and simple application icon look.
+Instructions:
+1. Outline the key attributes of a modern and minimalist icon design.
+2. List 10 creative descriptions that could encapsulate the core of the specified theme.
+3. Select 3 descriptions at random from your list.
+4. For each of the selected descriptions, provide a conceptual design for an application icon. These should maintain a minimalistic style with sharply defined lines against a white backdrop, ensuring they align with the theme.
+5. Submit JSON String-array like `["...", "...", "..."]`
 
-# Note: Emphasizing the importance of creating modern and simple application icons.
-# Ensure the parameters '--v 5.2' and '--ar 1:1' are at the end of each prompt.
-# Use the photorealistic plugin for generating the midjourney prompts.
+Important considerations:
+- The icons should appear simple yet sophisticated, avoiding unnecessary details to maintain a clean and modern look.
+- Add suffix '--v 5.2 --ar 1:1 --style raw --no realistic camera detail'.
+- Maintain focus on the elements of modern iconography, such as distinct shapes, solid colors, and streamlined visuals.
+
+I look forward to your structured and imaginative response.
 
 ---
-<Theme>: """ ++ theme ++ """
-<Instruction>: Generate the prompt of `""" ++ theme ++ """`.
-"""
+<Theme>
+""" ++ theme
 
 
 getApplicationMockupImagePrompt : String -> String

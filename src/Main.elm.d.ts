@@ -11,6 +11,16 @@ interface Ports {
   openModal: Cmd<string>;
   closeModal: Cmd<string>;
   receiveModalStatus: Sub<boolean>;
+  saveToLocalStoragePort: Cmd<{
+    path: string[];
+    value: unknown;
+  }>;
+  receiveSaveResultPort: Sub<boolean>;
+  loadFromLocalStoragePort: Cmd<{ path: string[]; msg: string }>;
+  receiveLoadResultPort: Sub<{
+    msg: string;
+    value: unknown;
+  } | null>;
 }
 type Flags = undefined;
 
